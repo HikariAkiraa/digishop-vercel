@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: digishop-app
+spec:
+  replicas: 2 # Minimal 2 untuk high availability saat rolling update
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0 # Jangan biarkan ada pod yang mati sebelum yang baru naik
+  selector:
+    matchLabels:
+      app: digishop
+  template:
+    metadata:
+      labels:
+        app: digishop
+    spec:
+      containers:
+      - name: app
+        image: digishop-app:latest # Akan dihandle oleh Skaffold/CI-CD
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: DB_HOST
+          value: "db"
+        - name: DB_USER
+          value: "postgres"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: digishop-secrets
+              key: db-password
+        - name: DB_NAME
+          value: "digishop"
+        - name: DB_PORT
+          value: "5432"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: digishop-secrets
+              key: jwt-secret
+        ports:
+        - containerPort: 3000
+        # Zero Downtime Magic: Probes
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        volumeMounts:
+        - name: uploads
+          mountPath: /app/uploads
+      volumes:
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: uploads-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: digishop-service
+spec:
+  type: LoadBalancer # Atau ClusterIP jika pakai Ingress
+  ports:
+  - port: 80
+    targetPort: 3000
+  selector:
+    app: digishop

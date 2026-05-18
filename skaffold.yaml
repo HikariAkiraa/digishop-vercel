@@ -1,0 +1,33 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: digishop
+build:
+  artifacts:
+  - image: digishop-app
+    docker:
+      dockerfile: Dockerfile
+    sync:
+      manual:
+        # Sinkronisasi folder dist (hasil build) agar langsung tampil di web
+        - src: 'client/dist/**/*'
+          dest: client/dist
+        # Sinkronisasi backend tetap dipertahankan
+        - src: '*.js'
+          dest: .
+        - src: 'routes/*.js'
+          dest: routes
+        - src: 'controllers/*.js'
+          dest: controllers
+        - src: 'models/*.js'
+          dest: models
+manifests:
+  rawYaml:
+  - k8s/secrets.yaml
+  - k8s/db-config.yaml
+  - k8s/db.yaml
+  - k8s/uploads-pvc.yaml
+  - k8s/app.yaml
+  - k8s/tunnel.yaml
+deploy:
+  kubectl: {}

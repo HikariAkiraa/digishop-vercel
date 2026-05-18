@@ -1,0 +1,24 @@
+.claude
+
+# Dependency
+node_modules/
+
+# Environment - JANGAN pernah commit file ini
+.env
+
+# Build output
+client/dist/
+
+# Log
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+
+# User uploads (data, bukan kode)
+uploads/*
+!uploads/.gitkeep
+
+# Kubernetes secrets - JANGAN pernah commit file ini
+k8s/secrets.yaml
