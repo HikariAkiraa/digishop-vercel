@@ -44,6 +44,10 @@ app.get('/{*splat}', (req, res) => {
     res.sendFile(path.join(__dirname, 'client/dist', 'index.html'));
 });
 
-app.listen(port, () => {
-    console.log(`Server DigiShop berjalan di http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    app.listen(port, () => {
+        console.log(`Server DigiShop berjalan di http://localhost:${port}`);
+    });
+}
+
+module.exports = app;

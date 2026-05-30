@@ -40,6 +40,55 @@ const updateContact = async (req, res) => {
     }
 };
 
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key:     process.env.CLOUDINARY_API_KEY,
+    api_secret:  process.env.CLOUDINARY_API_SECRET
+});
+
+const getPublicIdFromUrl = (url) => {
+    if (!url || !url.includes('cloudinary.com')) return null;
+    const parts = url.split('/upload/');
+    if (parts.length < 2) return null;
+    const pathAndFilename = parts[1].replace(/^v\d+\//, ''); // hapus format versi (contoh: v12345/)
+    const lastDotIndex = pathAndFilename.lastIndexOf('.');
+    return lastDotIndex === -1 ? pathAndFilename : pathAndFilename.substring(0, lastDotIndex);
+};
+
+const deleteFromCloudinary = async (url) => {
+    const publicId = getPublicIdFromUrl(url);
+    if (publicId) {
+        try {
+            await cloudinary.uploader.destroy(publicId);
+        } catch (err) {
+            console.error('Gagal menghapus gambar lama dari Cloudinary:', err.message);
+        }
+    }
+};
+
+const uploadToCloudinary = (fileBuffer, folder) => {
+    return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+            {
+                folder: folder,
+                resource_type: 'image',
+                transformation: [
+                    { width: 500, height: 500, crop: 'fill', gravity: 'face' },
+                    { quality: 'auto' },
+                    { fetch_format: 'webp' }
+                ]
+            },
+            (error, result) => {
+                if (error) reject(error);
+                else resolve(result);
+            }
+        );
+        uploadStream.end(fileBuffer);
+    });
+};
+
 const uploadImage = async (req, res) => {
     try {
         if (!req.file) {
@@ -48,13 +97,13 @@ const uploadImage = async (req, res) => {
         
         const existingContact = await ContactModel.getContactById(req.params.id);
         if (existingContact && existingContact.image_url) {
-            const oldImagePath = path.join(__dirname, '..', existingContact.image_url);
-            if (fs.existsSync(oldImagePath)) {
-                fs.unlinkSync(oldImagePath);
-            }
+            await deleteFromCloudinary(existingContact.image_url);
         }
 
-        const imageUrl = `/uploads/${req.file.filename}`;
+        const folder = 'digishop/contacts';
+        const cloudinaryResult = await uploadToCloudinary(req.file.buffer, folder);
+        const imageUrl = cloudinaryResult.secure_url;
+
         const contact = await ContactModel.updateImage(req.params.id, imageUrl);
         if (!contact) {
             return res.status(404).json({ success: false, message: 'Kontak tidak ditemukan' });
@@ -72,10 +121,7 @@ const deleteContact = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Kontak tidak ditemukan' });
         }
         if (contact.image_url) {
-            const oldImagePath = path.join(__dirname, '..', contact.image_url);
-            if (fs.existsSync(oldImagePath)) {
-                fs.unlinkSync(oldImagePath);
-            }
+            await deleteFromCloudinary(contact.image_url);
         }
         res.json({ success: true, message: 'Kontak berhasil dihapus' });
     } catch (err) {
