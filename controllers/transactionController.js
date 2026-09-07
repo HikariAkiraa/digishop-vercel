@@ -23,7 +23,7 @@ const getTransactionById = async (req, res) => {
 
 const createTransaction = async (req, res) => {
     try {
-        const { items } = req.body;
+        const { items, note, notes } = req.body;
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ success: false, message: 'Items wajib diisi (array of { product_id, quantity })' });
         }
@@ -34,7 +34,14 @@ const createTransaction = async (req, res) => {
             }
         }
 
-        const transaction = await TransactionModel.createTransaction({ user_id: req.user.id, items });
+        const rawNote = typeof note === 'string' ? note : (typeof notes === 'string' ? notes : null);
+        const trimmedNote = rawNote && rawNote.trim() ? rawNote.trim() : null;
+
+        const transaction = await TransactionModel.createTransaction({
+            user_id: req.user.id,
+            items,
+            note: trimmedNote
+        });
         res.status(201).json({ success: true, message: 'Transaksi berhasil dibuat', data: transaction });
     } catch (err) {
         if (err.statusCode) return res.status(err.statusCode).json({ success: false, message: err.message });

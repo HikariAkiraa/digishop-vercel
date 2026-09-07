@@ -9,6 +9,7 @@ export default function Transactions() {
   const [showPOS, setShowPOS] = useState(false);
   const [detail, setDetail] = useState(null);
   const [cart, setCart] = useState([]);
+  const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -56,9 +57,10 @@ export default function Transactions() {
     if (cart.length === 0) { setError('Keranjang kosong'); return; }
     try {
       const items = cart.map(({ product_id, quantity }) => ({ product_id, quantity }));
-      await api.post('/transactions', { items });
+      await api.post('/transactions', { items, note: note.trim() || null });
       setSuccess('Transaksi berhasil!');
       setCart([]);
+      setNote('');
       fetchData();
       setTimeout(() => { setShowPOS(false); setSuccess(''); }, 1500);
     } catch (err) {
@@ -93,7 +95,7 @@ export default function Transactions() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-white">Transactions</h1>
-        <button onClick={() => { setShowPOS(true); setCart([]); setError(''); setSuccess(''); }}
+        <button onClick={() => { setShowPOS(true); setCart([]); setNote(''); setError(''); setSuccess(''); }}
           className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white text-sm px-4 py-2 rounded-lg transition-colors cursor-pointer">
           <ShoppingCart className="w-4 h-4" /> New Transaction
         </button>
@@ -108,6 +110,7 @@ export default function Transactions() {
               <th className="px-4 py-3 text-left font-medium">#ID</th>
               <th className="px-4 py-3 text-left font-medium">Cashier</th>
               <th className="px-4 py-3 text-left font-medium">Date</th>
+              <th className="px-4 py-3 text-left font-medium">Note</th>
               <th className="px-4 py-3 text-right font-medium">Total</th>
               <th className="px-4 py-3 text-right font-medium">Profit</th>
               <th className="px-4 py-3 text-center font-medium">Action</th>
@@ -115,12 +118,21 @@ export default function Transactions() {
           </thead>
           <tbody>
             {transactions.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-8 text-slate-500">No transactions yet</td></tr>
+              <tr><td colSpan={7} className="text-center py-8 text-slate-500">No transactions yet</td></tr>
             ) : transactions.map(tx => (
               <tr key={tx.id} className="border-b border-[#2d2d4a] last:border-0 hover:bg-[#12122a] transition-colors">
                 <td className="px-4 py-3 text-slate-300">#{tx.id}</td>
                 <td className="px-4 py-3 text-slate-400">{tx.user_name || tx.cashier || '-'}</td>
                 <td className="px-4 py-3 text-slate-400 text-xs">{new Date(tx.created_at).toLocaleString('id-ID')}</td>
+                <td className="px-4 py-3 text-slate-400 text-xs max-w-[160px] truncate" title={tx.note || ''}>
+                  {tx.note ? (
+                    <span className="inline-block max-w-full truncate bg-[#12122a] border border-[#2d2d4a] px-2 py-0.5 rounded text-slate-300">
+                      {tx.note}
+                    </span>
+                  ) : (
+                    <span className="text-slate-600">-</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-right text-emerald-400 font-medium">{formatRp(tx.total)}</td>
                 <td className="px-4 py-3 text-right text-amber-400 font-medium">{formatRp(tx.profit || 0)}</td>
                 <td className="px-4 py-3 text-center">
@@ -209,8 +221,18 @@ export default function Transactions() {
                   ))}
                 </div>
 
-                <div className="border-t border-[#2d2d4a] pt-3 mt-3">
-                  <div className="flex items-center justify-between mb-3">
+                <div className="border-t border-[#2d2d4a] pt-3 mt-3 space-y-3">
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1 font-medium">Note (Optional)</label>
+                    <textarea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder="Add note for this transaction (optional)..."
+                      rows={2}
+                      className="w-full bg-[#12122a] border border-[#2d2d4a] rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-violet-500 resize-none transition-colors"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-400">Total</span>
                     <span className="text-lg font-bold text-white">{formatRp(cartTotal)}</span>
                   </div>
@@ -234,10 +256,16 @@ export default function Transactions() {
               <button onClick={() => setDetail(null)} className="text-slate-400 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-5 space-y-3">
-              <div className="text-xs text-slate-400">
+              <div className="text-xs text-slate-400 space-y-1">
                 <p>Cashier: {detail.user_name || detail.cashier || '-'}</p>
                 <p>Date: {new Date(detail.created_at).toLocaleString('id-ID')}</p>
               </div>
+              {detail.note && (
+                <div className="bg-[#12122a] border border-[#2d2d4a] rounded-lg p-3">
+                  <p className="text-[11px] font-semibold text-violet-400 uppercase tracking-wider mb-1">Note</p>
+                  <p className="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">{detail.note}</p>
+                </div>
+              )}
               <div className="space-y-1">
                 {(detail.items || []).map((item, i) => (
                   <div key={i} className="flex items-center justify-between py-1.5 border-b border-[#2d2d4a] last:border-0">

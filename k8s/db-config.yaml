@@ -59,6 +59,7 @@ data:
         user_id      INT NOT NULL REFERENCES users(id),
         total_amount INT NOT NULL CHECK (total_amount >= 0),
         total_profit INT NOT NULL DEFAULT 0,
+        note         TEXT,
         created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 

@@ -23,7 +23,7 @@ const getSalesByPeriod = async (startDate, endDate) => {
 // Daftar transaksi per periode
 const getTransactionsByPeriod = async (startDate, endDate) => {
     const result = await db.query(
-        `SELECT t.id, t.total_amount AS total, t.total_profit AS profit, t.created_at, u.name AS user_name
+        `SELECT t.id, t.total_amount AS total, t.total_profit AS profit, t.note, t.created_at, u.name AS user_name
          FROM transactions t
          JOIN users u ON t.user_id = u.id
          WHERE t.created_at >= $1 AND t.created_at < $2::date + INTERVAL '1 day'

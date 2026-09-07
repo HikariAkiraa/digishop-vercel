@@ -2,7 +2,7 @@ const db = require('../config/db');
 
 const getAllTransactions = async () => {
     const result = await db.query(
-        `SELECT t.id, t.user_id, t.total_amount AS total, t.total_profit AS profit, t.created_at, u.name AS user_name
+        `SELECT t.id, t.user_id, t.total_amount AS total, t.total_profit AS profit, t.note, t.created_at, u.name AS user_name
          FROM transactions t
          JOIN users u ON t.user_id = u.id
          ORDER BY t.created_at DESC`
@@ -12,7 +12,7 @@ const getAllTransactions = async () => {
 
 const getTransactionById = async (id) => {
     const transaction = await db.query(
-        `SELECT t.id, t.user_id, t.total_amount AS total, t.total_profit AS profit, t.created_at, u.name AS user_name
+        `SELECT t.id, t.user_id, t.total_amount AS total, t.total_profit AS profit, t.note, t.created_at, u.name AS user_name
          FROM transactions t
          JOIN users u ON t.user_id = u.id
          WHERE t.id = $1`,
@@ -33,7 +33,7 @@ const getTransactionById = async (id) => {
     return { ...transaction.rows[0], items: items.rows };
 };
 
-const createTransaction = async ({ user_id, items }) => {
+const createTransaction = async ({ user_id, items, note }) => {
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -56,8 +56,8 @@ const createTransaction = async ({ user_id, items }) => {
 
         // Buat transaksi
         const transaction = await client.query(
-            'INSERT INTO transactions (user_id, total_amount, total_profit) VALUES ($1, $2, $3) RETURNING *',
-            [user_id, totalAmount, totalProfit]
+            'INSERT INTO transactions (user_id, total_amount, total_profit, note) VALUES ($1, $2, $3, $4) RETURNING *',
+            [user_id, totalAmount, totalProfit, note || null]
         );
         const transactionId = transaction.rows[0].id;
 
