@@ -12,4 +12,11 @@ router.get('/daily', authenticate, authorizeAdmin, reportController.getDailySale
 // GET /api/reports/categories                               → penjualan per kategori
 router.get('/categories', authenticate, authorizeAdmin, reportController.getSalesByCategory);
 
+// Cash Flow (Buku Besar Arus Kas)
+router.get('/cash-flow', authenticate, authorizeAdmin, reportController.getCashFlowReport);
+router.post('/cash-flow', authenticate, authorizeAdmin, reportController.addCashFlowEntry);
+router.put('/cash-flow/:id', authenticate, authorizeAdmin, reportController.editCashFlowEntry);
+router.delete('/cash-flow/:id', authenticate, authorizeAdmin, reportController.removeCashFlowEntry);
+
 module.exports = router;
+

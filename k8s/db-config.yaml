@@ -94,3 +94,13 @@ data:
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS cash_flows (
+        id SERIAL PRIMARY KEY,
+        type VARCHAR(20) NOT NULL,
+        amount INT NOT NULL CHECK (amount > 0),
+        description TEXT NOT NULL,
+        date DATE NOT NULL DEFAULT CURRENT_DATE,
+        user_id INT REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
