@@ -202,14 +202,21 @@ const getCashFlowLedger = async (startDate, endDate) => {
             t.created_at AS raw_date,
             'omzet' AS type,
             'Penjualan Kasir' AS type_label,
-            COALESCE(
-                CONCAT('Transaksi Kasir #', t.id, ' (', items_summary.items_text, ')'),
-                CONCAT('Transaksi Kasir #', t.id)
-            ) AS description,
+            CASE
+                WHEN t.note IS NOT NULL AND t.note != '' AND items_summary.items_text IS NOT NULL THEN
+                    CONCAT('Transaksi Kasir #', t.id, ' (', items_summary.items_text, ') - ', t.note)
+                WHEN t.note IS NOT NULL AND t.note != '' THEN
+                    CONCAT('Transaksi Kasir #', t.id, ' - ', t.note)
+                WHEN items_summary.items_text IS NOT NULL THEN
+                    CONCAT('Transaksi Kasir #', t.id, ' (', items_summary.items_text, ')')
+                ELSE
+                    CONCAT('Transaksi Kasir #', t.id)
+            END AS description,
             t.total_amount AS in_amount,
             0 AS out_amount,
             true AS is_system,
             u.name AS user_name
+
         FROM transactions t
         LEFT JOIN users u ON t.user_id = u.id
         LEFT JOIN (
